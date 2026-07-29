@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f8fafc;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 0.85rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    #btn-order {
+      background: #6366f1;
+      color: #fff;
+    }
+    #btn-order:hover { opacity: 0.88; }
+
+    #btn-nav {
+      background: #10b981;
+      color: #fff;
+    }
+    #btn-nav:hover { opacity: 0.88; }
+
+    .log-box {
+      width: 100%;
+      max-width: 600px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      min-height: 180px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .log-box p {
+      font-size: 0.78rem;
+      margin-bottom: 0;
+    }
+
+    .log-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 0.6rem;
+    }
+
+    .log-entry {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid #1e2d3d;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .log-entry.order { color: #a5b4fc; }
+    .log-entry.navigation { color: #6ee7b7; }
+    .log-entry.error { color: #fca5a5; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .status {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎯 Event Tracker</h1>
+
+  <div class="buttons">
+    <button id="btn-order" onclick="sendEvent('order')">Order Event</button>
+    <button id="btn-nav"   onclick="sendEvent('navigation')">Navigation Event</button>
+  </div>
+
+  <div class="log-box">
+    <p class="log-title">Activity Log</p>
+    <div id="log"></div>
+  </div>
+
+  <p class="status" id="status">Ready — click a button to fire an event.</p>
+
+  <script>
+    const API = 'http://localhost:8000';
+
+    async function sendEvent(type) {
+      const messages = {
+        order:      'User placed an order',
+        navigation: 'User navigated to a new page',
+      };
+
+      const message = messages[type];
+      const endpoint = `${API}/event/${type}`;
+      const ts = new Date().toLocaleTimeString();
+
+      setStatus(`Sending ${type} event…`);
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        appendLog(`[${ts}] ✓ ${data.type.toUpperCase()} — ${data.message}`, type);
+        setStatus(`Event logged at ${ts}`);
+      } catch (err) {
+        appendLog(`[${ts}] ✗ Failed to send ${type} event: ${err.message}`, 'error');
+        setStatus('Error — is the FastAPI server running?');
+      }
+    }
+
+    function appendLog(text, cls) {
+      const log = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${cls}`;
+      entry.textContent = text;
+      log.prepend(entry);
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+  </script>
+</body>
+</html>
